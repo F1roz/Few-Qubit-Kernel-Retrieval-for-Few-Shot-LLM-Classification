@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="sort-only">
+  <info><title>IEEE (compact)</title><id>ieee-compact</id><updated>2026-10-05T00:00:00+00:00</updated></info>
+  <macro name="author">
+    <names variable="author">
+      <name and="text" delimiter=", " delimiter-precedes-last="always" et-al-min="7" et-al-use-first="1" initialize-with=". " name-as-sort-order="none"/>
+      <et-al font-style="italic"/>
+      <substitute><names variable="editor"/></substitute>
+    </names>
+  </macro>
+  <citation collapse="citation-number">
+    <sort><key variable="citation-number"/></sort>
+    <layout delimiter=", " prefix="[" suffix="]"><text variable="citation-number"/></layout>
+  </citation>
+  <bibliography entry-spacing="0" second-field-align="flush">
+    <layout suffix=".">
+      <text variable="citation-number" prefix="[" suffix="] "/>
+      <text macro="author" suffix=", "/>
+      <choose>
+        <if type="article-journal">
+          <text variable="title" quotes="true" suffix=", "/>
+          <text variable="container-title" font-style="italic"/>
+          <text variable="volume" prefix=", vol. "/>
+          <text variable="issue" prefix=", no. "/>
+          <text variable="page" prefix=", "/>
+          <date variable="issued" prefix=", "><date-part name="year"/></date>
+        </if>
+        <else-if type="book">
+          <text variable="title" font-style="italic" suffix=". "/>
+          <text variable="publisher"/>
+          <date variable="issued" prefix=", "><date-part name="year"/></date>
+        </else-if>
+        <else-if type="paper-conference chapter" match="any">
+          <text variable="title" quotes="true" suffix=", "/>
+          <text variable="container-title" prefix="in " font-style="italic"/>
+          <text variable="volume" prefix=", vol. "/>
+          <text variable="page" prefix=", pp. "/>
+          <date variable="issued" prefix=", "><date-part name="year"/></date>
+        </else-if>
+        <else>
+          <text variable="title" quotes="true" suffix=", "/>
+          <text variable="container-title" font-style="italic"/>
+          <text variable="number" prefix=" "/>
+          <date variable="issued" prefix=", "><date-part name="year"/></date>
+        </else>
+      </choose>
+    </layout>
+  </bibliography>
+</style>

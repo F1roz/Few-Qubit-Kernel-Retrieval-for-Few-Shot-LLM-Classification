@@ -1,0 +1,12 @@
+% Written by src/paper_text.py: template 'ieee' (configs/config.yaml, paper: venue:).
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage[hidelinks]{hyperref}
+\newtheorem{proposition}{Proposition}
+\newenvironment{paperproof}{\begin{IEEEproof}}{\end{IEEEproof}}
+\newcommand{\PaperBibStyle}{IEEEtran}
+\newcommand{\makefront}{\maketitle\begin{abstract}\PaperAbstract\end{abstract}%
+\begin{IEEEkeywords}\PaperKeywords\end{IEEEkeywords}}
+\newcommand{\makefrontplain}{\maketitle}
+\newcommand{\paperack}[1]{\section*{Acknowledgment}#1}

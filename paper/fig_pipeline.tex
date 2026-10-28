@@ -1,0 +1,28 @@
+% Pipeline figure (TikZ). Used by main.tex as \input{fig_pipeline}.
+\begin{tikzpicture}[
+  font=\footnotesize, node distance=4.5mm and 4mm,
+  box/.style={draw=black!55, rounded corners=2pt, align=center, inner sep=3pt, minimum height=9mm, fill=white},
+  sel/.style={box, fill=black!6},
+  q/.style={box, fill=orange!12, draw=orange!70!black},
+  c/.style={box, fill=green!8, draw=green!45!black},
+  diag/.style={box, fill=blue!5, draw=blue!50!black, dashed},
+  arr/.style={-{Stealth[length=2mm]}, thick, black!70}]
+\node[box] (txt) {Query $q$\\and pool $\mathcal{P}$};
+\node[box, right=of txt] (emb) {MiniLM (384) or\\MPNet (768): $e(x)$};
+\node[box, right=of emb] (lda) {LDA (pool only)\\$z(x)\in\mathbb{R}^{d}$};
+\node[box, right=of lda] (std) {standardize,\\scale by $c$};
+\node[c, right=8mm of std, yshift=7mm, text width=30mm] (ck) {classical: cosine,\\Euclidean, RBF, BM25,\\MMR, NCA-64, fusion};
+\node[q, below=2mm of ck, text width=30mm] (qk) {quantum: angle, IQP,\\projected, $M$ shots};
+\begin{scope}[on background layer]
+\node[sel, fit=(ck)(qk), inner sep=2.5mm, label={[font=\scriptsize\itshape]above:only this changes}] (selbox) {};
+\end{scope}
+\node[box, right=8mm of selbox] (topk) {top-$k$\\demonstrations};
+\node[box, right=of topk] (prm) {fixed\\prompt};
+\node[box, right=of prm] (llm) {frozen\\LLM};
+\node[box, right=of llm] (out) {label\\$\hat y(q)$};
+\draw[arr] (txt) -- (emb); \draw[arr] (emb) -- (lda); \draw[arr] (lda) -- (std);
+\draw[arr] (std) -- (selbox.west|-std); \draw[arr] (selbox.east|-topk) -- (topk);
+\draw[arr] (topk) -- (prm); \draw[arr] (prm) -- (llm); \draw[arr] (llm) -- (out);
+\node[diag, below=9mm of topk, xshift=24mm, text width=62mm] (dg) {before any LLM call: geometric difference $g$,\\overlap $J$, rank agreement $\bar\rho$, KTA,\\label precision@$k$, retrieval AUROC, label vote};
+\draw[arr, dashed, blue!50!black] (selbox.south) |- (dg.west);
+\end{tikzpicture}

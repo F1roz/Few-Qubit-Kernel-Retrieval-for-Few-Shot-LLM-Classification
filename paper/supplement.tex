@@ -1,0 +1,177 @@
+% Supplementary material. Same template switch as main.tex (venue.tex). Compile: latexmk -pdf supplement.tex
+\input{venue}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{url}
+\newcommand{\res}[1]{#1}
+\input{results_macros}
+\input{results_text}
+\providecommand{\fillin}[1]{{\color{red}[#1]}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
+\begin{document}
+\title{Supplementary Material for\\ ``Can a Quantum Kernel Pick Better Demonstrations?''}
+\input{authors}
+\makefrontplain
+
+\section{Prompt template}
+The TREC prompt for $k=2$ is shown below; Emotion and DBpedia-14 use ``Text:'' instead of
+``Question:'' and their own instruction and label list. Demonstrations appear from least to most
+similar.
+\begin{quote}\footnotesize\ttfamily
+Classify each question by the type of answer it asks for. Use exactly one of these labels:
+abbreviation, entity, description, human, location, number. Reply with the label word only.\\[2pt]
+Question: \textit{(second most similar pool question)}\\
+Answer: \textit{(its label)}\\[2pt]
+Question: \textit{(most similar pool question)}\\
+Answer: \textit{(its label)}\\[2pt]
+Question: \textit{(test question)}\\
+Answer:
+\end{quote}
+
+\section{Hyperparameters}
+\begin{table}[h]
+\centering
+\caption{Settings. Only $c$ changes which items are retrieved; it is tuned on 100 validation items by the
+accuracy of a 4-nearest-neighbour vote with the IQP kernel (ties go to the smaller value).}
+\footnotesize
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}lll@{}}
+\toprule
+Parameter & Used by & Candidates \\
+\midrule
+Bandwidth $c$ & S6--S9 & 0.1, 0.25, 0.5, 1.0 \\
+RBF $\gamma = m\gamma_0$ & $g$ only (no effect on S5 retrieval) & $m\in\{0.25,0.5,1,2\}$, smallest $g$ kept \\
+Projected $\gamma_P$ & $g$ only & median rule \\
+IQP repetitions & S7--S9 & 2 (fixed; 1 and 3 in the ablation) \\
+Shots $M$ & S9 & 1{,}024 (64 to 16{,}384 in the shots figure of the paper) \\
+Ridge $\lambda$ in $g$ & diagnostics & $10^{-3}$ \\
+BM25 $k_1$, $b$ & S10 & 1.5, 0.75 (fixed) \\
+MMR $\lambda$ & S11, S12 & 0.5 (fixed in advance) \\
+NCA dimensions & S13 & 64, fitted on pool labels \\
+RRF constant & S15 & 60 (standard value) \\
+Equivalence margin & TOST & $\pm2$ points (same as decision rules) \\
+Noise $p_2$ ($p_1=p_2/10$) & noise study & 0, 0.001, 0.003, 0.01, 0.03 \\
+Qubits & scaling study & 2, 3, 4, 5, 6, 8, 10, 12 (NCA) \\
+4-bit quantization & Qwen2.5-7B & NF4, float16 compute \\
+Trained scales & S16, S17 & centred alignment, 250 pool items, L-BFGS, $\le$60 iterations \\
+Scale bounds & S16, S17 & $[10^{-3}, 10]$; start: tuned $c$ (S16), $\sqrt{\gamma_0}$ (S17) \\
+NCA sizes with the LLM & open LLM / main LLM & 6, 8, 10, 12 / 6, 8 \\
+Large test set & open LLM & 2{,}000 items (Emotion, DBpedia-14, Banking77) \\
+Max.\ new tokens & all LLMs & 24 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\section{Preregistered comparison families}
+Primary (Holm within family): S7--S5, S7--S3. Secondary: S7--S2, S7--S13. Exploratory: S8--S5,
+S12--S11, S15--S2, S16--S17, S16--S7. The oracle S14 is never tested; it is reported only as a bound.
+Everything else (NCA runs with 6--12 qubits, Banking77, 2{,}000-item test sets, $k$ sweep, order,
+bandwidth study, robustness, difficulty strata) is exploratory and uncorrected. The TOST margin and
+all selector settings above were fixed in the same dated file as the decision rules.
+
+\section{Additional results}
+
+\begin{table}[h]
+\centering
+\caption{Accuracy (\%) of the open LLM on TREC ($d=5$, seed 0) when the same retrieved demonstrations
+are printed in three orders.}
+\footnotesize
+\input{tables/tab_order}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Accuracy and macro-F1 (\%) of the open LLM (Qwen2.5-1.5B-Instruct), seed 0, averaged over
+$d\in\{2,\dots,5\}$.}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\columnwidth}{!}{\input{tables/tab_open_acc}}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_ablation}
+\caption{The ablation table above as a plot: change in retrieval AUROC relative to the full IQP selector,
+with 95\% paired bootstrap intervals, per dataset.}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_calibration_precision}
+\caption{(a) Reliability of the open LLM on TREC ($d=5$). (b) Label precision of the retrieved set
+against LLM accuracy, one point per selector, setting and LLM (faded: open LLM).}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\columnwidth]{figures/fig_overlap}
+\caption{Jaccard overlap of the retrieved sets for every pair of selectors (TREC, seed 0, $d=5$).}
+\end{figure}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_datasets}
+\caption{Mean accuracy per selector on the three datasets for both LLMs.}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_acc_qubits}
+\caption{LLM accuracy against the number of qubits $d$ for the main LLM. Lines show the mean over seeds
+(TREC) and shaded bands the range. Random selection is dashed.}
+\end{figure*}
+
+\section{Geometry, difficulty, calibration and ablation}
+
+\begin{table}[h]
+\centering
+\caption{Geometry without the LLM. Top: rank agreement $\bar\rho$ and kernel-target alignment on the
+LDA settings. Bottom: the qubit scaling study (NCA features, tuned $c$), at the smallest and largest $d$.}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\resizebox{\columnwidth}{!}{\input{tables/tab_geometry}}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_difficulty}
+\caption{IQP-minus-RBF gap (main LLM) within terciles of query difficulty, defined by the retrieval AUROC
+of cosine on the full embedding (a selector outside the comparison), with 95\% bootstrap intervals.}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{Open LLM (Qwen2.5-1.5B-Instruct), seed 0, averaged over $d$: one-vs-rest macro AUROC of
+the label probabilities and ECE (ten bins), both in \%.}
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\columnwidth}{!}{\input{tables/tab_open}}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_concentration_shots}
+\caption{(a) Distribution of off-diagonal IQP kernel values on the TREC pool for each bandwidth $c$,
+next to the RBF kernel ($\gamma$ giving the smallest $g$). (b) Label precision and (c) overlap with the
+exact selection as a function of the number of shots (five noise draws).}
+\end{figure}
+
+\begin{table*}[t]
+\centering
+\caption{Ablation without the LLM, seed 0, averaged over $d\in\{2,\dots,5\}$. Each row changes one part
+of the full IQP selector. $\Delta$AUROC is the change in retrieval AUROC ($\times100$) with a 95\% paired
+bootstrap interval; $J$ vs.\ full is the overlap with the sets the full method retrieves.}
+\footnotesize
+\input{tables/tab_ablation}
+\end{table*}
+
+\section{More qubits with NCA}
+With NCA features of $d=6$ and $d=8$ (TREC, seed 0, main LLM): \TNca
+
+\section{Per-class accuracy and disagreements}
+\TPerClass
+
+\end{document}

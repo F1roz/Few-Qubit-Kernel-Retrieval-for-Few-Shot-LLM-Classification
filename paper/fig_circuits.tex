@@ -1,0 +1,24 @@
+% Circuit figure (quantikz). Used by main.tex as \input{fig_circuits}.
+\footnotesize
+\begin{tabular}{@{}c@{\hspace{3mm}}c@{}}
+(a) Map A & (b) one layer of Map B \\[1mm]
+\begin{quantikz}[row sep=0.12cm, column sep=0.18cm]
+\lstick{$\ket{0}$} & \gate{R_Y(x_1)} & \qw \\
+\lstick{$\ket{0}$} & \gate{R_Y(x_2)} & \qw \\
+\lstick{$\ket{0}$} & \gate{R_Y(x_3)} & \qw
+\end{quantikz}
+&
+\begin{quantikz}[row sep=0.12cm, column sep=0.18cm]
+\lstick{$\ket{0}$} & \gate{H} & \gate{R_Z(x_1)} & \gate[3]{\displaystyle\prod_{j<l}R_{ZZ}(x_jx_l)} & \qw \\
+\lstick{$\ket{0}$} & \gate{H} & \gate{R_Z(x_2)} & & \qw \\
+\lstick{$\ket{0}$} & \gate{H} & \gate{R_Z(x_3)} & & \qw
+\end{quantikz}
+\\[2mm]
+\multicolumn{2}{c}{(c) kernel estimation: $K(x,x')=\Pr[\,000\,]$} \\[1mm]
+\multicolumn{2}{c}{
+\begin{quantikz}[row sep=0.12cm, column sep=0.25cm]
+\lstick{$\ket{0}$} & \gate[3]{U(x)} & \gate[3]{U(x')^{\dagger}} & \meter{} \\
+\lstick{$\ket{0}$} & & & \meter{} \\
+\lstick{$\ket{0}$} & & & \meter{}
+\end{quantikz}}
+\end{tabular}

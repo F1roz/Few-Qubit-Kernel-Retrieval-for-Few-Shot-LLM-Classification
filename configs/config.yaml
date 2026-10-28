@@ -1,0 +1,110 @@
+# All settings live here. Change a number here, never inside the code.
+project_name: qkernel_icl
+
+data:
+  dataset: trec           # trec (main), emotion, dbpedia, banking77 (harder: 77 intents). The pipeline flag --dataset overrides this.
+  pool_size: 500          # labelled examples the selectors can choose from
+  val_size: 100           # used only to tune the quantum bandwidth and the kernel gammas
+  test_size: 500          # test questions per dataset (stratified sample when the test set is larger)
+  big_test_size: 2000     # the --big variant (Emotion, DBpedia, Banking77; open LLM): more test items for statistical power
+  train_cap: 6000         # big datasets: keep a stratified sample of this many training rows (TREC has 5,450)
+  seeds: [0, 1, 2]        # each seed draws a different pool
+  main_encoder: minilm    # the encoder of every main run
+  encoders:               # name -> sentence-transformers model; mpnet is the second-encoder robustness check
+    minilm: all-MiniLM-L6-v2
+    mpnet: all-mpnet-base-v2
+
+features:
+  lda_dims: [2, 3, 4, 5]  # LDA gives at most (classes - 1) dims; all three datasets allow 5
+  nca_dims: [6, 8, 10, 12]   # NCA has no cap: more qubits with the LLM (open LLM: all; main LLM: experiment.nca_main_dims)
+
+classical:
+  rbf_gamma_multipliers: [0.25, 0.5, 1.0, 2.0]   # 4 values x median rule gamma. Gamma never changes S5 picks; it only enters g (smallest g kept)
+
+quantum:
+  bandwidths: [0.1, 0.25, 0.5, 1.0]   # 4 values, tuned on validation (IQP neighbour vote); shared by S6 to S9
+  iqp_repeats: 2
+  shots: 1024             # S9: IQP kernel estimated from this many measurements (hardware realism)
+  ridge: 0.001            # small value added before inverting a kernel matrix
+
+llm:                      # main LLM (paid API)
+  provider: anthropic     # anthropic or openai
+  model: claude-haiku-4-5-20251001   # low cost model; never change it after the pilot
+  temperature: 0
+  max_tokens: 24
+  cache_file: results/llm_cache.jsonl
+  score_labels: false     # API models give no label probabilities
+
+llm2:                     # second LLM: free, open model run on the Colab GPU
+  provider: hf_local
+  model: Qwen/Qwen2.5-1.5B-Instruct
+  temperature: 0
+  max_tokens: 24
+  cache_file: results/llm_cache.jsonl
+  score_labels: true      # also store the probability of every label (for AUROC and calibration)
+  score_label_seeds: [0]  # label probabilities only for these seeds (halves the GPU time of seeds 1 and 2)
+
+llm3:                     # third LLM: a larger open model, 4-bit on the Colab T4 (free, slower)
+  provider: hf_local
+  model: Qwen/Qwen2.5-7B-Instruct
+  load_in_4bit: true
+  temperature: 0
+  max_tokens: 24
+  cache_file: results/llm_cache.jsonl
+  score_labels: false
+
+experiment:
+  k_main: 4
+  k_sweep: [2, 8, 16]
+  selectors: [S1_random, S2_cosine_full, S3_cosine_lda, S4_euclid_lda, S5_rbf_lda, S6_q_angle, S7_q_iqp, S8_q_projected,
+              S10_bm25, S11_mmr_cosine, S12_mmr_iqp, S13_nca64_full, S14_oracle, S15_rrf_cos_iqp,
+              S16_q_trained, S17_rbf_trained]
+  ksweep_selectors: [S1_random, S2_cosine_full, S3_cosine_lda, S5_rbf_lda, S7_q_iqp, S8_q_projected, S11_mmr_cosine, S13_nca64_full, S14_oracle]
+  mmr_lambda: 0.5         # fixed in advance (MMR balance of relevance and diversity)
+  nca_full_dims: 64       # S13: trained metric retriever on the full embedding
+  llm3_dims: [5]          # third LLM runs only at this size (GPU time)
+  llm3_selectors: [S1_random, S2_cosine_full, S3_cosine_lda, S5_rbf_lda, S6_q_angle, S7_q_iqp, S8_q_projected, S11_mmr_cosine, S13_nca64_full, S14_oracle]
+  robustness_selectors: [S7_q_iqp, S9_q_iqp_shots]
+  nca_selectors: [S2_cosine_full, S3_cosine_lda, S4_euclid_lda, S5_rbf_lda, S6_q_angle, S7_q_iqp, S8_q_projected, S16_q_trained, S17_rbf_trained]
+  nca_main_dims: [6, 8]   # the paid main LLM runs NCA only at these sizes; the open LLM runs every features.nca_dims
+  trained_kernel:         # S16 / S17: per-feature input scales trained to maximise centred kernel-target alignment
+    subsample: 250        # pool items used for training (labels of the POOL only)
+    max_iter: 60
+  probs_max_labels: 20    # label probabilities (AUROC, ECE) only for datasets with at most this many labels
+  order_selectors: [S3_cosine_lda, S5_rbf_lda, S7_q_iqp]   # ordering ablation (run it with the free LLM)
+  order_variants: [near_first, shuffled]                  # near_last is the main setting
+
+studies:                  # extra studies; none of them needs the paid LLM
+  scaling_dims: [2, 3, 4, 5, 6, 8, 10, 12]   # qubit scaling, NCA features, NumPy simulation
+  noise_dims: [5]
+  noise_p2: [0.0, 0.001, 0.003, 0.01, 0.03]  # two-qubit gate error; one-qubit error = p2 / 10
+  noise_shots: [1024]
+  bandwidth_study_selectors: [S7_q_iqp, S8_q_projected]   # run with the open LLM at every bandwidth
+  hardware_queries: 20    # optional IBM check: queries x pool items, 4 qubits
+  hardware_pool: 50
+
+decision:                 # fixed BEFORE the main run (see SOP Phase 11)
+  min_gap_points: 2.0     # smallest accuracy gap (in points) that we call meaningful
+  alpha: 0.05
+  min_seeds_agree: 2      # out of the seeds that were run (capped at the number of seeds run)
+  min_dims_agree: 3       # out of 4
+  primary: [[S7_q_iqp, S5_rbf_lda], [S7_q_iqp, S3_cosine_lda]]
+  secondary: [[S7_q_iqp, S2_cosine_full], [S7_q_iqp, S13_nca64_full]]          # strongest classical opponents
+  exploratory: [[S8_q_projected, S5_rbf_lda], [S12_mmr_iqp, S11_mmr_cosine], [S15_rrf_cos_iqp, S2_cosine_full],
+                [S16_q_trained, S17_rbf_trained], [S16_q_trained, S7_q_iqp]]
+  equivalence_margin: 2.0 # points; TOST equivalence test uses the same margin as the decision rules
+
+paper:                    # used by  python -m src.pipeline paper  (writes paper/venue.tex and paper/authors.tex)
+  venue: ieee             # template: ieee | springer | acm | arxiv   (change this one line for another venue)
+  authors: ["Author One", "Author Two", "Author Three"]
+  emails: ["first@university.edu", "second@university.edu", "third@university.edu"]
+  department: "Department of Computer Science and Engineering"
+  institution: "University Name"
+  city: "City"
+  country: "Country"
+  repo_url: "https://github.com/USERNAME/qkernel-icl"
+  funding: ""             # e.g. "This work was supported by ...". Empty: no sentence.
+  ai_disclosure: "The authors used an AI assistant (Claude, Anthropic) to help draft and edit parts of the text and the analysis code. The authors designed the study, ran all experiments, checked every result and reference, and take full responsibility for the content."
+  llm_display_name: "Claude Haiku 4.5"        # how the main LLM is named in the paper
+  llm_provider_name: "Anthropic"
+  kernel_machine: "a Google Colab CPU runtime"

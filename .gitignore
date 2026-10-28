@@ -1,0 +1,5 @@
+.env
+__pycache__/
+data/features/
+results/llm_cache.jsonl
+smoke_tmp/

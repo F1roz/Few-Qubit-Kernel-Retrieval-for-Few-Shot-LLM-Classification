@@ -1,0 +1,17 @@
+pennylane
+sentence-transformers
+datasets
+scikit-learn
+numpy
+scipy
+pandas
+matplotlib
+pyyaml
+pytest
+anthropic
+openai
+transformers
+accelerate
+torch
+bitsandbytes          # 4-bit loading of Qwen2.5-7B (third LLM, GPU only)
+# optional, only for the IBM hardware check:  pip install qiskit qiskit-ibm-runtime qiskit-aer
